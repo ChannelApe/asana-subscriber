@@ -5,8 +5,8 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const { log } = require("./services/logger");
-const { changedTaskFilter } = require('./services/utils');
-const { getTaskById, moveTaskToColumn } = require("./services/asana-service");
+const { isSubTaskFiler } = require('./services/utils');
+const { getTaskById, addProjectOnSubtask } = require("./services/asana-service");
 const { isEstablishingWebHookProcess, handleHandShake } = require('./services/webhook-service');
 
 /* Application */
@@ -15,61 +15,56 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 
 /* Routes */
-app.get('/', (req, res) => fs.readFile('/tmp/default.log', 'utf8', (err, logs) => {
-    res.render('index', {
-        version: '1.0.1',
-        logs: logs,
-    });
-}));
+// app.get('/', (req, res) => fs.readFile('/tmp/default.log', 'utf8', (err, logs) => {
+//     res.render('index', {
+//         version: '1.0.1',
+//         logs: logs,
+//     });
+// }));
 
-app.post('/receive-webhook/core-brands-ndc-7654', (req, res) => {
+app.post('/receive-webhook/task-added', (req, res) => {
     if (isEstablishingWebHookProcess(req)) {
         return handleHandShake(req, res);
     }
 
     const events = req.body && req.body.events;
     if (events) {
-        log(`Received ${events.length} webhook events`);
-        const changedTasksEvents = events.filter(changedTaskFilter);
-        if (changedTasksEvents) {
-            log(`Found ${changedTasksEvents.length} events with type: task and action: changed`);
-            changedTasksEvents.map(event => {
-                getTaskById(event.resource).then(task => {
-                    if (task && task.completed) {
-                        moveTaskToColumn(task, 'Core Brands NDC', 'Archive');
-                        moveTaskToColumn(task, 'Core Sprint C (NDC)', 'Archive', true);
+        log(`Received ${events.length} task-added webhook events`);
+        events.map(event => {
+            if(event.resource.resource_type === 'task' && event.action === 'added' && event.parent.resource_type === 'task'){
+                getTaskById(event.resource.gid).then(task => {
+                    if(task){
+                        console.log('its a subtask with parent resource_type of task')
+                        getTaskById(task.parent.gid).then(parentTask => {
+                            addProjectOnSubtask(task, parentTask);
+                        });
                     }
                 })
-            });
-        }
+            }else{
+                console.log('its not a task or task with parent with resource_type of task')
+            }
+        });
+        
     }
 
     res.sendStatus(200);
 });
 
-app.post('/receive-webhook/core-sprint-c-ndc-7654', (req, res) => {
+app.post('/receive-webhook/project-added', (req, res) => {
     if (isEstablishingWebHookProcess(req)) {
         return handleHandShake(req, res);
     }
 
     const events = req.body && req.body.events;
     if (events) {
-        log(`Received ${events.length} webhook events`);
-        const changedTasksEvents = events.filter(changedTaskFilter);
-        if (changedTasksEvents) {
-            log(`Found ${changedTasksEvents.length} events with type: task and action: changed`);
-            changedTasksEvents.map(event => {
-                getTaskById(event.resource).then(task => {
-                    if (task && task.completed) {
-                        moveTaskToColumn(task, 'Core Sprint C (NDC)', 'Archive');
-                        moveTaskToColumn(task, 'Core Brands NDC', 'Archive', true);
-                    }
-                })
-            });
-        }
+        log(`Received ${events.length} project-added webhook events`);
+        events.map(event => {
+            console.log(event);
+        });
+        
     }
 
     res.sendStatus(200);
 });
 
-app.listen(process.env.PORT, () => log(`Example app listening on port ${process.env.PORT}!`));
+app.listen(process.env.PORT, () => log(`Webhook Subscriber listening on port ${process.env.PORT}!`));

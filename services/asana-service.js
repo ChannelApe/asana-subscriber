@@ -5,7 +5,7 @@ const { projects: cachedProjects } = require('./cache-service');
 const instance = axios.create({
     baseURL: 'https://app.asana.com/api/1.0/',
     headers: {
-        Authorization: `Bearer ${process.env.ASANA_BEARER_TOCKEN}`,
+        Authorization: `Bearer ${process.env.ASANA_BEARER_TOKEN}`,
     }
 });
 
@@ -15,7 +15,6 @@ module.exports.getTaskById = (id) => {
     return instance
         .get(`/tasks/${id}`, {
             params: {
-                assignee: 'me',
                 workspace: `${process.env.ASANA_WORKSPACE}`,
             },
         })
@@ -23,50 +22,76 @@ module.exports.getTaskById = (id) => {
         .catch(reason => reason && reason.message);
 };
 
-module.exports.moveTaskToColumn = (task, projectName, sectionName, shouldAddIfDoesNotBelong = false) => {
-    if (!task) {
-        throw new Error('Task does not exist!');
-    }
-    log(`Moving task ${task.gid} to ${projectName} ${sectionName} section`);
 
-    const taskId = task.gid;
-    const projects = task.projects;
-    let project = projects && projects.find(p => p.name === projectName);
-    let projectId = project && project.gid;
+module.exports.getSectionsByProject = (projectId) => {
+    return instance
+        .get(`/projects/${projectId}/sections`, {
+            params: {
+                workspace: `${process.env.ASANA_WORKSPACE}`,
+            },
+        })
+        .then(response => response && response.data && response.data.data)
+        .catch(reason => reason && reason.message);
+}
 
-    if (!projectId && shouldAddIfDoesNotBelong) {
-        project = cachedProjects && cachedProjects.find(p => p.name === projectName);
-        projectId = project && project.gid;
-    }
-
-    const cachedProject = cachedProjects.find(p => p.id === projectId);
-    const cachedSection = cachedProject && cachedProject.sections.find(s => s.name === sectionName);
-    const sectionId = cachedSection && cachedSection.gid;
-
-    const isAlreadyInSection = task.memberships && task.memberships.find(m => {
-        return m
-            && m.project && m.project.name === projectName
-            && m.section && m.section.name === sectionName
-    });
-    if (isAlreadyInSection) {
-        return log(`Task ${task.gid} already in ${projectName} ${sectionName} section`)
-    }
-
-    if (!projectId) {
-        return log(`Task ${task.gid} does not belong to ${projectName}`);
-    }
-    if (!sectionId) {
-        return log(`Section ${sectionName} was not found in cache service`);
-    }
-
-    instance
-        .post(`/tasks/${taskId}/addProject`, {
+module.exports.createSectionOnProject = (projectId, sectionName) => {
+    return instance
+        .post(`/projects/${projectId}/sections`, {
             data: {
-                task_gid: taskId,
-                project: projectId,
-                section: sectionId,
+                name: sectionName,
             },
         })
         .then(() => log(`Task ${task.gid} was successfully moved to ${projectName} ${sectionName} section`))
         .catch(reason => error(`Error occur during moving task ${task.gid} to ${projectName} ${sectionName} section: ${reason && reason.message}`));
-};
+}
+
+
+module.exports.addProjectOnSubtask = (subtask, parentTask) => {
+
+    const taskId = subtask.gid;
+    const projectId = parentTask.memberships[0].project.gid;
+    const projectName = parentTask.memberships[0].project.name;
+
+    this.getSectionsByProject(projectId)
+    .then(sections => {
+        result = sections.find( ({ name }) => name === 'Subtasks');
+        var sectionId = '';
+        var sectionName = '';
+
+        if(result){
+            sectionId = result.gid;
+            sectionName = result.name;
+        }else{
+            sectionCreateResult = this.createSectionOnProject(projectId, 'Subtasks');
+            sectionId = sectionCreateResult.gid;
+            sectionName = sectionCreateResult.name;
+        }
+
+        instance
+            .post(`/tasks/${taskId}/addProject`, {
+                data: {
+                    task_gid: taskId,
+                    project: projectId,
+                    section: sectionId,
+                },
+            })
+            .then(() => log(`Task ${taskId} was successfully moved to ${projectName} ${sectionName} section`))
+            .catch(reason => error(`Error occur during moving task ${taskId} to ${projectName} ${sectionName} section: ${reason && reason.message}`));
+    })
+}
+
+
+
+module.exports.createWebhookForNewProject = (projectId) => {
+    return instance
+        .post(`/webhooks`, {
+            data: {
+                resource: projectId,
+                target: "url",
+                resource_type: "task",
+                action: "added"
+            },
+        })
+        .then(() => log(`Task ${task.gid} was successfully moved to ${projectName} ${sectionName} section`))
+        .catch(reason => error(`Error occur during moving task ${task.gid} to ${projectName} ${sectionName} section: ${reason && reason.message}`));
+}

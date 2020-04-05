@@ -41,8 +41,8 @@ module.exports.createSectionOnProject = (projectId, sectionName) => {
                 name: sectionName,
             },
         })
-        .then(() => log(`Task ${task.gid} was successfully moved to ${projectName} ${sectionName} section`))
-        .catch(reason => error(`Error occur during moving task ${task.gid} to ${projectName} ${sectionName} section: ${reason && reason.message}`));
+        .then(() => log(`Section ${sectionName} created on projectId: ${projectId}`))
+        .catch(reason => error(`Error ${sectionName} NOT created on projectId: ${projectId}: ${reason && reason.message}`));
 }
 
 
@@ -82,16 +82,21 @@ module.exports.addProjectOnSubtask = (subtask, parentTask) => {
 
 
 
-module.exports.createWebhookForNewProject = (projectId) => {
+module.exports.subscribeToTaskAddedWebhook = (projectId) => {
+
     return instance
         .post(`/webhooks`, {
             data: {
                 resource: projectId,
-                target: "url",
-                resource_type: "task",
-                action: "added"
+                target: `${process.env.CALLBACK_BASE_URL}/receive-webhook/task-added`,
+                filters: [
+                    {
+                        resource_type: "task",
+                        action: "added"
+                    }
+                ] 
             },
         })
-        .then(() => log(`Task ${task.gid} was successfully moved to ${projectName} ${sectionName} section`))
-        .catch(reason => error(`Error occur during moving task ${task.gid} to ${projectName} ${sectionName} section: ${reason && reason.message}`));
+        .then(() => log(`Webhooks for Project: ${projectId} were successfully subscribed`))
+        .catch(reason => error(`Webhooks for Project: ${projectId} were errored during subscribe: ${reason && reason.message}`));
 }

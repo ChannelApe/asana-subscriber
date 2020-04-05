@@ -6,7 +6,7 @@ const app = express();
 const bodyParser = require('body-parser');
 const { log } = require("./services/logger");
 const { isSubTaskFiler } = require('./services/utils');
-const { getTaskById, addProjectOnSubtask } = require("./services/asana-service");
+const { getTaskById, addProjectOnSubtask, subscribeToTaskAddedWebhook, createSectionOnProject } = require("./services/asana-service");
 const { isEstablishingWebHookProcess, handleHandShake } = require('./services/webhook-service');
 
 /* Application */
@@ -59,7 +59,11 @@ app.post('/receive-webhook/project-added', (req, res) => {
     if (events) {
         log(`Received ${events.length} project-added webhook events`);
         events.map(event => {
-            console.log(event);
+            if(event.action === 'added' && event.resource.resource_type === 'project' && event.parent.resource_type === 'workspace'){
+                const projectId = event.resource.gid;
+                subscribeToTaskAddedWebhook(projectId);
+                createSectionOnProject(projectId, 'Subtasks');
+            }
         });
         
     }
@@ -67,4 +71,4 @@ app.post('/receive-webhook/project-added', (req, res) => {
     res.sendStatus(200);
 });
 
-app.listen(process.env.PORT, () => log(`Webhook Subscriber listening on port ${process.env.PORT}!`));
+app.listen(process.env.PORT, () => log(`Webhook Asana Subscriber listening on port ${process.env.PORT}!`));

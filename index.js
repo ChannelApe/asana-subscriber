@@ -6,7 +6,8 @@ const app = express();
 const bodyParser = require('body-parser');
 const { log } = require("./services/logger");
 const { isSubTaskFiler } = require('./services/utils');
-const { getTaskById, addProjectOnSubtask, subscribeToTaskAddedWebhook, createSectionOnProject } = require("./services/asana-service");
+const { getTaskById, addProjectOnSubtask, subscribeToTaskAddedWebhook, createSectionOnProject, getUserById, getProjectMembershipById, getProjectById } = require("./services/asana-service");
+const { addEmailToHarvestProject } = require("./services/harvest-service");
 const { isEstablishingWebHookProcess, handleHandShake } = require('./services/webhook-service');
 
 /* Application */
@@ -64,6 +65,45 @@ app.post('/receive-webhook/project-added', (req, res) => {
                 subscribeToTaskAddedWebhook(projectId);
                 createSectionOnProject(projectId, 'Subtasks');
             }
+        });
+        
+    }
+
+    res.sendStatus(200);
+});
+
+
+app.post('/receive-webhook/project-membership', (req, res) => {
+    if (isEstablishingWebHookProcess(req)) {
+        return handleHandShake(req, res);
+    }
+
+    const events = req.body && req.body.events;
+    if (events) {
+        log(`Received ${events.length} project-membership webhook event(s)`);
+        events.map(event => {
+            if(event.action === 'added' && event.resource.resource_type === 'project_membership'){
+                const projectMembershipId = event.resource.gid;
+                getProjectMembershipById(projectMembershipId).then(projectMembership => {
+                    const uid = projectMembership.user.gid;
+                    getUserById(uid).then(user => {
+                        getProjectById(event.parent.gid).then(project => {
+                            addEmailToHarvestProject(user.email, project.name);
+                        });
+                    });
+                });
+                
+            }
+            // if(event.action === 'removed' && event.resource.resource_type === 'project_membership'){
+            //     const projectMembershipId = event.resource.gid;
+            //     getProjectMembershipById(projectMembershipId).then(projectMembership => {
+            //         console.log(projectMembership);
+            //         const uid = projectMembership.user.gid;
+            //         getUserById(uid).then(user => {
+            //             console.log(user.email);
+            //         });
+            //     });
+            // }
         });
         
     }

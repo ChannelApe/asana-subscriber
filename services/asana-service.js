@@ -23,6 +23,29 @@ module.exports.getTaskById = (id) => {
 };
 
 
+module.exports.getUserById = (id) => {
+    return instance
+        .get(`/users/${id}`)
+        .then(response => response && response.data && response.data.data)
+        .catch(reason => reason && reason.message);
+};
+
+module.exports.getProjectById = (id) => {
+    return instance
+        .get(`/projects/${id}`)
+        .then(response => response && response.data && response.data.data)
+        .catch(reason => reason && reason.message);
+};
+
+
+module.exports.getProjectMembershipById = (id) => {
+    return instance
+        .get(`/project_memberships/${id}`)
+        .then(response => response && response.data && response.data.data)
+        .catch(reason => reason && reason.message);
+};
+
+
 module.exports.getSectionsByProject = (projectId) => {
     return instance
         .get(`/projects/${projectId}/sections`, {

@@ -6,7 +6,7 @@ const app = express();
 const bodyParser = require('body-parser');
 const { log } = require("./services/logger");
 const { isSubTaskFiler } = require('./services/utils');
-const { getTaskById, addProjectOnSubtask, subscribeToTaskAddedWebhook, createSectionOnProject, getUserById, getProjectMembershipById, getProjectById } = require("./services/asana-service");
+const { getTaskById, addProjectOnSubtask, subscribeToTaskAddedWebhook, createSectionOnProject, getUserById, getProjectMembershipById, getProjectById, subscribeToProjectMembershipWebhook } = require("./services/asana-service");
 const { addEmailToHarvestProject } = require("./services/harvest-service");
 const { isEstablishingWebHookProcess, handleHandShake } = require('./services/webhook-service');
 
@@ -63,6 +63,7 @@ app.post('/receive-webhook/project-added', (req, res) => {
             if(event.action === 'added' && event.resource.resource_type === 'project' && event.parent.resource_type === 'workspace'){
                 const projectId = event.resource.gid;
                 subscribeToTaskAddedWebhook(projectId);
+                subscribeToProjectMembershipWebhook(projectId);
                 createSectionOnProject(projectId, 'Subtasks');
             }
         });
@@ -92,18 +93,7 @@ app.post('/receive-webhook/project-membership', (req, res) => {
                         });
                     });
                 });
-                
             }
-            // if(event.action === 'removed' && event.resource.resource_type === 'project_membership'){
-            //     const projectMembershipId = event.resource.gid;
-            //     getProjectMembershipById(projectMembershipId).then(projectMembership => {
-            //         console.log(projectMembership);
-            //         const uid = projectMembership.user.gid;
-            //         getUserById(uid).then(user => {
-            //             console.log(user.email);
-            //         });
-            //     });
-            // }
         });
         
     }

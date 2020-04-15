@@ -123,3 +123,21 @@ module.exports.subscribeToTaskAddedWebhook = (projectId) => {
         .then(() => log(`Webhooks for Project: ${projectId} were successfully subscribed`))
         .catch(reason => error(`Webhooks for Project: ${projectId} were errored during subscribe: ${reason && reason.message}`));
 }
+
+module.exports.subscribeToProjectMembershipWebhook = (projectId) => {
+
+    return instance
+        .post(`/webhooks`, {
+            data: {
+                resource: projectId,
+                target: `${process.env.CALLBACK_BASE_URL}/receive-webhook/project-membership`,
+                filters: [
+                    {
+                        resource_type: "project_membership"
+                    }
+                ] 
+            },
+        })
+        .then(() => log(`Webhooks for Project: ${projectId} were successfully subscribed`))
+        .catch(reason => error(`Webhooks for Project: ${projectId} were errored during subscribe: ${reason && reason.message}`));
+}

@@ -34,7 +34,7 @@ app.post('/receive-webhook/task-added', (req, res) => {
                     }
                 })
             }else{
-                logger.debug('its not a task or task with parent with resource_type of task')
+                debug('its not a task or task with parent with resource_type of task')
             }
         });
         

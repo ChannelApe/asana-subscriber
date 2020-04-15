@@ -15,14 +15,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 
-/* Routes */
-// app.get('/', (req, res) => fs.readFile('/tmp/default.log', 'utf8', (err, logs) => {
-//     res.render('index', {
-//         version: '1.0.1',
-//         logs: logs,
-//     });
-// }));
-
 app.post('/receive-webhook/task-added', (req, res) => {
     if (isEstablishingWebHookProcess(req)) {
         return handleHandShake(req, res);

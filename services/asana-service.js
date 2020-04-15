@@ -1,4 +1,5 @@
 const axios = require('axios');
+const axiosRetry = require('axios-retry');
 const { log, error } = require("./logger");
 const { projects: cachedProjects } = require('./cache-service');
 
@@ -8,7 +9,7 @@ const instance = axios.create({
         Authorization: `Bearer ${process.env.ASANA_BEARER_TOKEN}`,
     }
 });
-
+axiosRetry(instance, { retries: 5, retryDelay: axiosRetry.exponentialDelay });
 instance.defaults.headers.post[ 'Content-Type' ] = 'application/json';
 
 module.exports.getTaskById = (id) => {

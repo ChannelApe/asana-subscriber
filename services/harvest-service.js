@@ -1,4 +1,5 @@
 const axios = require('axios');
+const axiosRetry = require('axios-retry');
 const { log, error } = require("./logger");
 
 
@@ -10,7 +11,7 @@ const harvestApi = axios.create({
         'User-Agent': `${process.env.HARVEST_APP}`
     }
 });
-
+axiosRetry(harvestApi, { retries: 5, retryDelay: axiosRetry.exponentialDelay });
 
 module.exports.getAllUsers = async (active) => {
     if (active !== undefined) {
@@ -44,8 +45,8 @@ module.exports.getUserById = async (id) => {
 module.exports.createUserAssignment = (projectId, userId) => {
     return harvestApi
         .post(`/projects/${projectId}/user_assignments?user_id=${userId}&use_default_rates=true`)
-        .then(() => log(`User ${userId} added on projectId: ${projectId}`))
-        .catch(reason => error(`Error ${userId} NOT added on projectId: ${projectId}: ${reason && reason.message}`));
+        .then(() => log(`Harvest User: ${userId} added on Harvest Project Id: ${projectId}`))
+        .catch(reason => error(`Error Harvest User: ${userId} NOT added on Project Id: ${projectId}: ${reason && reason.message}`));
 }
 
 module.exports.addEmailToHarvestProject = async (email, projectName) => {

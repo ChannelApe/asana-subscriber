@@ -25,7 +25,7 @@ module.exports.getAllUsers = async (active) => {
 
 module.exports.getAllProjects = async (page) => {
     if (page === undefined) {
-        page = '1';
+        page = 1;
     }
     return await harvestApi
         .get(`/projects?page=${page}&is_active=true`)
@@ -51,34 +51,35 @@ module.exports.createUserAssignment = (projectId, userId) => {
 
 module.exports.addEmailToHarvestProject = async (email, projectName) => {
     this.getAllUsers('true').then(list => {
-        this.getAllProjects('1').then(response => {
-            for (let index = 0; index < response.total_pages; index++) {
+        this.getAllProjects(1).then(response => {
+            for (let index = 1; index <= response.total_pages; index++) {
                 this.getAllProjects(index).then(page => {
-                    let projects = page.projects;
-                    let projectMatched = 0;
-                    for (let project of projects) {
-                        if (project.name === projectName) {
-                            log(`Found ${projectName} with ID of ${project.id}`);
-                            let users = list.users;
-                            let emailMatched = 0;
-                            for (let user of users) {
-                                if (user.email === email) {
-                                    log(`${email} found with Harvest ID of: ${user.id}`)
-                                    this.createUserAssignment(project.id, user.id);
-                                    emailMatched = 1;
-                                    break;
+                        let projects = page.projects;
+                        let projectMatched = 0;
+                        for (let project of projects) {
+                            if (project.name === projectName) {
+                                log(`Found ${projectName} with ID of ${project.id}`);
+                                let users = list.users;
+                                let emailMatched = 0;
+                                for (let user of users) {
+                                    if (user.email === email) {
+                                        log(`${email} found with Harvest ID of: ${user.id}`)
+                                        this.createUserAssignment(project.id, user.id);
+                                        emailMatched = 1;
+                                        break;
+                                    }
                                 }
+                                if (!emailMatched) {
+                                    log(`No active Harvest user match for ${email}`);
+                                }
+                                projectMatched = 1;
+                                break;
                             }
-                            if (!emailMatched) {
-                                log(`No active Harvest user match for ${email}`);
-                            }
-                            projectMatched = 1;
-                            break;
                         }
-                    }
-                    if (!projectMatched) {
-                        log(`No match for project ${projectName}`);
-                    }
+                        if (!projectMatched) {
+                            log(`No match for project ${projectName}`);
+                        }
+                    
                 })
             }
         })

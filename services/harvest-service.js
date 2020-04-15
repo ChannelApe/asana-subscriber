@@ -14,7 +14,7 @@ const harvestApi = axios.create({
 axiosRetry(harvestApi, { retries: 5, retryDelay: axiosRetry.exponentialDelay });
 
 module.exports.getAllUsers = async (active) => {
-    if (active !== undefined) {
+    if (active === undefined) {
         active = 'true';
     }
     return await harvestApi
@@ -24,7 +24,7 @@ module.exports.getAllUsers = async (active) => {
 };
 
 module.exports.getAllProjects = async (page) => {
-    if (page !== undefined) {
+    if (page === undefined) {
         page = '1';
     }
     return await harvestApi

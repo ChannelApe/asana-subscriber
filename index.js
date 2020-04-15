@@ -3,10 +3,11 @@ require('dotenv').config();
 const fs = require('fs');
 const express = require('express');
 const app = express();
+const schedule = require('node-schedule');
 const bodyParser = require('body-parser');
 const { log } = require("./services/logger");
 const { isSubTaskFiler } = require('./services/utils');
-const { getTaskById, addProjectOnSubtask, subscribeToTaskAddedWebhook, createSectionOnProject, getUserById, getProjectMembershipById, getProjectById, subscribeToProjectMembershipWebhook } = require("./services/asana-service");
+const { getTaskById, addProjectOnSubtask, subscribeToTaskAddedWebhook, createSectionOnProject, getUserById, getProjectMembershipById, getProjectById, subscribeToProjectMembershipWebhook, aggregateProjects } = require("./services/asana-service");
 const { addEmailToHarvestProject } = require("./services/harvest-service");
 const { isEstablishingWebHookProcess, handleHandShake } = require('./services/webhook-service');
 
@@ -54,8 +55,8 @@ app.post('/receive-webhook/project-added', (req, res) => {
         events.map(event => {
             if(event.action === 'added' && event.resource.resource_type === 'project' && event.parent.resource_type === 'workspace'){
                 const projectId = event.resource.gid;
-                subscribeToTaskAddedWebhook(projectId);
-                subscribeToProjectMembershipWebhook(projectId);
+                subscribeToTaskAddedWebhook(projectId, event.resource.name);
+                subscribeToProjectMembershipWebhook(projectId, event.resource.name);
                 createSectionOnProject(projectId, 'Subtasks');
             }
         });
@@ -94,3 +95,7 @@ app.post('/receive-webhook/project-membership', (req, res) => {
 });
 
 app.listen(process.env.PORT, () => log(`Webhook Asana Subscriber listening on port ${process.env.PORT}!`));
+schedule.scheduleJob('12 23 * * *', function(){
+    log('Running webhook daily scheduler to fix missing webhooks');
+    aggregateProjects();
+});

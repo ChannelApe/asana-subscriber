@@ -23,11 +23,25 @@ module.exports.getTaskById = (id) => {
         .catch(reason => reason && reason.message);
 };
 
-
 module.exports.getUserById = (id) => {
     return instance
         .get(`/users/${id}`)
         .then(response => response && response.data && response.data.data)
+        .catch(reason => reason && reason.message);
+};
+
+module.exports.getAllProjects = (archived, offset) => {
+    path = `/projects`
+    if (archived === undefined) {archived = 'false';}
+    if (offset === undefined) {
+        path = `/projects?archived=${archived}&limit=5&workspace=${process.env.ASANA_WORKSPACE}`
+    }else{
+        path = `/projects?archived=${archived}&limit=5&offset=${offset}&workspace=${process.env.ASANA_WORKSPACE}`
+    }
+
+    return instance
+        .get(path)
+        .then(response => response && response.data)
         .catch(reason => reason && reason.message);
 };
 
@@ -106,7 +120,27 @@ module.exports.addProjectOnSubtask = (subtask, parentTask) => {
 
 
 
-module.exports.subscribeToTaskAddedWebhook = (projectId) => {
+module.exports.aggregateProjects = (offset) => {
+    this.getAllProjects('false', offset).then(page => { 
+        this.subscribeProjectsToWebhooks(page.data);
+        if(page.next_page){
+            this.aggregateProjects(page.next_page.offset);
+        }else{
+            log('Done retrieving all projects');
+        }
+    });
+}
+
+
+
+module.exports.subscribeProjectsToWebhooks = (page) => {
+        page.forEach(project => {
+            this.subscribeToTaskAddedWebhook(project.gid, project.name);
+            this.subscribeToProjectMembershipWebhook(project.gid, project.name);
+        });
+}
+
+module.exports.subscribeToTaskAddedWebhook = (projectId, projectName) => {
 
     return instance
         .post(`/webhooks`, {
@@ -121,8 +155,8 @@ module.exports.subscribeToTaskAddedWebhook = (projectId) => {
                 ] 
             },
         })
-        .then(() => log(`Webhooks for Project: ${projectId} were successfully subscribed`))
-        .catch(reason => error(`Webhooks for Project: ${projectId} were errored during subscribe: ${reason && reason.message}`));
+        .then(() => log(`Webhooks for Project ${projectName}: ${projectId} were successfully subscribed`))
+        .catch(reason => error(`Webhooks for Project ${projectName}: ${projectId} were errored during subscribe: ${reason && reason.message}`));
 }
 
 module.exports.subscribeToProjectMembershipWebhook = (projectId) => {

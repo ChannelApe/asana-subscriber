@@ -1,7 +1,7 @@
 const axios = require('axios');
 const axiosRetry = require('axios-retry');
-const { log, error } = require("./logger");
-const { projects: cachedProjects } = require('./cache-service');
+const log4js = require('log4js');
+const logger = log4js.getLogger('Asana-Subscriber');
 
 const instance = axios.create({
     baseURL: 'https://app.asana.com/api/1.0/',
@@ -20,14 +20,14 @@ module.exports.getTaskById = (id) => {
             },
         })
         .then(response => response && response.data && response.data.data)
-        .catch(reason => reason && reason.message);
+        .catch(reason => logger.error(reason && reason.message));
 };
 
 module.exports.getUserById = (id) => {
     return instance
         .get(`/users/${id}`)
         .then(response => response && response.data && response.data.data)
-        .catch(reason => reason && reason.message);
+        .catch(reason => logger.error(reason && reason.message));
 };
 
 module.exports.getAllProjects = (archived, offset) => {
@@ -42,14 +42,14 @@ module.exports.getAllProjects = (archived, offset) => {
     return instance
         .get(path)
         .then(response => response && response.data)
-        .catch(reason => reason && reason.message);
+        .catch(reason => logger.error(reason && reason.message));
 };
 
 module.exports.getProjectById = (id) => {
     return instance
         .get(`/projects/${id}`)
         .then(response => response && response.data && response.data.data)
-        .catch(reason => reason && reason.message);
+        .catch(reason => logger.error(reason && reason.message));
 };
 
 
@@ -57,7 +57,7 @@ module.exports.getProjectMembershipById = (id) => {
     return instance
         .get(`/project_memberships/${id}`)
         .then(response => response && response.data && response.data.data)
-        .catch(reason => reason && reason.message);
+        .catch(reason => logger.error(reason && reason.message));
 };
 
 
@@ -69,7 +69,7 @@ module.exports.getSectionsByProject = (projectId) => {
             },
         })
         .then(response => response && response.data && response.data.data)
-        .catch(reason => reason && reason.message);
+        .catch(reason => logger.error(reason && reason.message));
 }
 
 module.exports.createSectionOnProject = (projectId, sectionName) => {
@@ -79,8 +79,8 @@ module.exports.createSectionOnProject = (projectId, sectionName) => {
                 name: sectionName,
             },
         })
-        .then(() => log(`Section ${sectionName} created on projectId: ${projectId}`))
-        .catch(reason => error(`Error ${sectionName} NOT created on projectId: ${projectId}: ${reason && reason.message}`));
+        .then(() => logger.info(`Section ${sectionName} created on projectId: ${projectId}`))
+        .catch(reason => logger.error(`Error ${sectionName} NOT created on projectId: ${projectId}: ${reason && reason.message}`));
 }
 
 
@@ -113,8 +113,8 @@ module.exports.addProjectOnSubtask = (subtask, parentTask) => {
                     section: sectionId,
                 },
             })
-            .then(() => log(`Task ${taskId} was successfully moved to ${projectName} ${sectionName} section`))
-            .catch(reason => error(`Error occur during moving task ${taskId} to ${projectName} ${sectionName} section: ${reason && reason.message}`));
+            .then(() => logger.info(`Task ${taskId} was successfully moved to ${projectName} ${sectionName} section`))
+            .catch(reason => logger.error(`Error occur during moving task ${taskId} to ${projectName} ${sectionName} section: ${reason && reason.message}`));
     })
 }
 
@@ -126,7 +126,7 @@ module.exports.aggregateProjects = (offset) => {
         if(page.next_page){
             this.aggregateProjects(page.next_page.offset);
         }else{
-            log('Done retrieving all projects');
+            logger.info('Done retrieving all projects');
         }
     });
 }
@@ -155,8 +155,8 @@ module.exports.subscribeToTaskAddedWebhook = (projectId, projectName) => {
                 ] 
             },
         })
-        .then(() => log(`Webhooks for Project ${projectName}: ${projectId} were successfully subscribed`))
-        .catch(reason => error(`Webhooks for Project ${projectName}: ${projectId} were errored during subscribe: ${reason && reason.message}`));
+        .then(() => logger.info(`Webhooks for Project ${projectName}: ${projectId} were successfully subscribed`))
+        .catch(reason => logger.error(`Webhooks for Project ${projectName}: ${projectId} were errored during subscribe: ${reason && reason.message}`));
 }
 
 module.exports.subscribeToProjectMembershipWebhook = (projectId) => {
@@ -173,6 +173,6 @@ module.exports.subscribeToProjectMembershipWebhook = (projectId) => {
                 ] 
             },
         })
-        .then(() => log(`Webhooks for Project: ${projectId} were successfully subscribed`))
-        .catch(reason => error(`Webhooks for Project: ${projectId} were errored during subscribe: ${reason && reason.message}`));
+        .then(() => logger.info(`Webhooks for Project: ${projectId} were successfully subscribed`))
+        .catch(reason => logger.error(`Webhooks for Project: ${projectId} were errored during subscribe: ${reason && reason.message}`));
 }

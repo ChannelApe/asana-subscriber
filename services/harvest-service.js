@@ -1,6 +1,7 @@
 const axios = require('axios');
 const axiosRetry = require('axios-retry');
-const { log, error } = require("./logger");
+const log4js = require('log4js');
+const logger = log4js.getLogger('Asana-Subscriber');
 
 
 const harvestApi = axios.create({
@@ -20,7 +21,7 @@ module.exports.getAllUsers = async (active) => {
     return await harvestApi
         .get(`/users?is_active=${active}`)
         .then(response => response && response.data)
-        .catch(reason => reason && reason.message);
+        .catch(reason => logger.error(reason && reason.message));
 };
 
 module.exports.getAllProjects = async (page) => {
@@ -30,7 +31,7 @@ module.exports.getAllProjects = async (page) => {
     return await harvestApi
         .get(`/projects?page=${page}&is_active=true`)
         .then(response => response && response.data)
-        .catch(reason => reason && reason.message);
+        .catch(reason => logger.error(reason && reason.message));
 };
 
 
@@ -38,15 +39,15 @@ module.exports.getUserById = async (id) => {
     return await harvestApi
         .get(`/users/${id}`)
         .then(response => response && response.data && response.data.data)
-        .catch(reason => reason && reason.message);
+        .catch(reason => logger.error(reason && reason.message));
 };
 
 
 module.exports.createUserAssignment = (projectId, userId) => {
     return harvestApi
         .post(`/projects/${projectId}/user_assignments?user_id=${userId}&use_default_rates=true`)
-        .then(() => log(`Harvest User: ${userId} added on Harvest Project Id: ${projectId}`))
-        .catch(reason => error(`Error Harvest User: ${userId} NOT added on Project Id: ${projectId}: ${reason && reason.message}`));
+        .then(() => logger.info(`Harvest User: ${userId} added on Harvest Project Id: ${projectId}`))
+        .catch(reason => logger.error(`Error Harvest User: ${userId} NOT added on Project Id: ${projectId}: ${reason && reason.message}`));
 }
 
 module.exports.addEmailToHarvestProject = async (email, projectName) => {
@@ -58,26 +59,26 @@ module.exports.addEmailToHarvestProject = async (email, projectName) => {
                         let projectMatched = 0;
                         for (let project of projects) {
                             if (project.name === projectName) {
-                                log(`Found ${projectName} with ID of ${project.id}`);
+                                logger.info(`Found Harvest Project: ${projectName} with ID of ${project.id}`);
                                 let users = list.users;
                                 let emailMatched = 0;
                                 for (let user of users) {
                                     if (user.email === email) {
-                                        log(`${email} found with Harvest ID of: ${user.id}`)
+                                        logger.info(`Harvest user ${email} found with Harvest ID of: ${user.id}`)
                                         this.createUserAssignment(project.id, user.id);
                                         emailMatched = 1;
                                         break;
                                     }
                                 }
                                 if (!emailMatched) {
-                                    log(`No active Harvest user match for ${email}`);
+                                    logger.warn(`No active Harvest user match for ${email}`);
                                 }
                                 projectMatched = 1;
                                 break;
                             }
                         }
                         if (!projectMatched) {
-                            log(`No match for project ${projectName}`);
+                            logger.warn(`No match for Harvest project ${projectName}`);
                         }
                     
                 })

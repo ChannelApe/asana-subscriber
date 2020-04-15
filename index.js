@@ -5,8 +5,12 @@ const express = require('express');
 const app = express();
 const schedule = require('node-schedule');
 const bodyParser = require('body-parser');
-const { log } = require("./services/logger");
-const { isSubTaskFiler } = require('./services/utils');
+const log4js = require('log4js');
+log4js.configure({
+    appenders: { console: { type: 'console' } },
+    categories: { default: { appenders: [ 'console' ], level: 'info' } }
+  });
+const logger = log4js.getLogger('Asana-Subscriber');
 const { getTaskById, addProjectOnSubtask, subscribeToTaskAddedWebhook, createSectionOnProject, getUserById, getProjectMembershipById, getProjectById, subscribeToProjectMembershipWebhook, aggregateProjects } = require("./services/asana-service");
 const { addEmailToHarvestProject } = require("./services/harvest-service");
 const { isEstablishingWebHookProcess, handleHandShake } = require('./services/webhook-service');
@@ -23,19 +27,19 @@ app.post('/receive-webhook/task-added', (req, res) => {
 
     const events = req.body && req.body.events;
     if (events) {
-        log(`Received ${events.length} task-added webhook events`);
+        logger.info(`Received ${events.length} task-added webhook events`);
         events.map(event => {
             if(event.resource.resource_type === 'task' && event.action === 'added' && event.parent.resource_type === 'task'){
                 getTaskById(event.resource.gid).then(task => {
                     if(task){
-                        console.log('its a subtask with parent resource_type of task')
+                        console.logger.info('its a subtask with parent resource_type of task')
                         getTaskById(task.parent.gid).then(parentTask => {
                             addProjectOnSubtask(task, parentTask);
                         });
                     }
                 })
             }else{
-                console.log('its not a task or task with parent with resource_type of task')
+                logger.debug('its not a task or task with parent with resource_type of task')
             }
         });
         
@@ -51,7 +55,7 @@ app.post('/receive-webhook/project-added', (req, res) => {
 
     const events = req.body && req.body.events;
     if (events) {
-        log(`Received ${events.length} project-added webhook events`);
+        logger.info(`Received ${events.length} project-added webhook events`);
         events.map(event => {
             if(event.action === 'added' && event.resource.resource_type === 'project' && event.parent.resource_type === 'workspace'){
                 const projectId = event.resource.gid;
@@ -74,7 +78,7 @@ app.post('/receive-webhook/project-membership', (req, res) => {
 
     const events = req.body && req.body.events;
     if (events) {
-        log(`Received ${events.length} project-membership webhook event(s)`);
+        logger.info(`Received ${events.length} project-membership webhook event(s)`);
         events.map(event => {
             if(event.action === 'added' && event.resource.resource_type === 'project_membership'){
                 const projectMembershipId = event.resource.gid;
@@ -94,8 +98,8 @@ app.post('/receive-webhook/project-membership', (req, res) => {
     res.sendStatus(200);
 });
 
-app.listen(process.env.PORT, () => log(`Webhook Asana Subscriber listening on port ${process.env.PORT}!`));
+app.listen(process.env.PORT, () => logger.info(`Webhook Asana Subscriber listening on port ${process.env.PORT}!`));
 schedule.scheduleJob('12 23 * * *', function(){
-    log('Running webhook daily scheduler to fix missing webhooks');
+    logger.info('Running webhook daily scheduler to fix missing webhooks');
     aggregateProjects();
 });

@@ -2,7 +2,7 @@ const axios = require('axios');
 const axiosRetry = require('axios-retry');
 const { Logger } = require('channelape-logger');
 const { LogLevel } = require('channelape-sdk');
-const LOGGER = new Logger('asana-service', LogLevel.INFO);
+const LOGGER = new Logger('asanaService', LogLevel.INFO);
 
 const instance = axios.create({
     baseURL: 'https://app.asana.com/api/1.0/',

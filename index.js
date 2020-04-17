@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Logger } = require('channelape-logger');
 const { LogLevel } = require('channelape-sdk');
-const LOGGER = new Logger('index', LogLevel.INFO);
+const LOGGER = new Logger('subscriberMain', LogLevel.INFO);
 const express = require('express');
 const app = express();
 const schedule = require('node-schedule');
@@ -28,7 +28,7 @@ app.post('/receive-webhook/task-added', (req, res) => {
             if(event.resource.resource_type === 'task' && event.action === 'added' && event.parent.resource_type === 'task'){
                 getTaskById(event.resource.gid).then(task => {
                     if(task){
-                        LOGGER.info('its a subtask with parent resource_type of task')
+                        LOGGER.debug('its a subtask with parent resource_type of task')
                         getTaskById(task.parent.gid).then(parentTask => {
                             addProjectOnSubtask(task, parentTask);
                         });

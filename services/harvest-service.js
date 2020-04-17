@@ -2,7 +2,7 @@ const axios = require('axios');
 const axiosRetry = require('axios-retry');
 const { Logger } = require('channelape-logger');
 const { LogLevel } = require('channelape-sdk');
-const LOGGER = new Logger('harvest-service', LogLevel.INFO);
+const LOGGER = new Logger('harvestService', LogLevel.INFO);
 
 
 const harvestApi = axios.create({

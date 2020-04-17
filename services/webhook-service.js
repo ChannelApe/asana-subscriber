@@ -1,6 +1,6 @@
 const { Logger } = require('channelape-logger');
 const { LogLevel } = require('channelape-sdk');
-const LOGGER = new Logger('webhook-service', LogLevel.INFO);
+const LOGGER = new Logger('webhookService', LogLevel.INFO);
 
 module.exports.isEstablishingWebHookProcess = req => req && req.headers && req.headers['x-hook-secret'];
 

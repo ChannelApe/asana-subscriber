@@ -91,32 +91,37 @@ module.exports.addProjectOnSubtask = (subtask, parentTask) => {
     const projectId = parentTask.memberships[0].project.gid;
     const projectName = parentTask.memberships[0].project.name;
 
-    this.getSectionsByProject(projectId)
-    .then(sections => {
-        result = sections.find( ({ name }) => name === 'Subtasks');
-        var sectionId = '';
-        var sectionName = '';
+    if(projectName.startsWith("T: ")){
+        console.info("This is a template, don't subscribe to webhooks");
+        console.log(name); 
+    }else{
+        this.getSectionsByProject(projectId)
+        .then(sections => {
+            result = sections.find( ({ name }) => name === 'Subtasks');
+            var sectionId = '';
+            var sectionName = '';
 
-        if(result){
-            sectionId = result.gid;
-            sectionName = result.name;
-        }else{
-            sectionCreateResult = this.createSectionOnProject(projectId, 'Subtasks');
-            sectionId = sectionCreateResult.gid;
-            sectionName = sectionCreateResult.name;
-        }
+            if(result){
+                sectionId = result.gid;
+                sectionName = result.name;
+            }else{
+                sectionCreateResult = this.createSectionOnProject(projectId, 'Subtasks');
+                sectionId = sectionCreateResult.gid;
+                sectionName = sectionCreateResult.name;
+            }
 
-        instance
-            .post(`/tasks/${taskId}/addProject`, {
-                data: {
-                    task_gid: taskId,
-                    project: projectId,
-                    section: sectionId,
-                },
-            })
-            .then(() => LOGGER.info(`Task ${taskId} was successfully moved to ${projectName} ${sectionName} section`))
-            .catch(reason => LOGGER.error(`Error occur during moving task ${taskId} to ${projectName} ${sectionName} section: ${reason && reason.message}`));
-    })
+            instance
+                .post(`/tasks/${taskId}/addProject`, {
+                    data: {
+                        task_gid: taskId,
+                        project: projectId,
+                        section: sectionId,
+                    },
+                })
+                .then(() => LOGGER.info(`Task ${taskId} was successfully moved to ${projectName} ${sectionName} section`))
+                .catch(reason => LOGGER.error(`Error occur during moving task ${taskId} to ${projectName} ${sectionName} section: ${reason && reason.message}`));
+        })
+    }
 }
 
 

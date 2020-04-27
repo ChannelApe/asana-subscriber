@@ -92,8 +92,8 @@ module.exports.addProjectOnSubtask = (subtask, parentTask) => {
     const projectName = parentTask.memberships[0].project.name;
 
     if(projectName.startsWith("T: ")){
-        console.info("This is a template, don't subscribe to webhooks");
-        console.log(name); 
+        LOGGER.info("This is a template, don't subscribe to webhooks");
+        LOGGER.info(projectName); 
     }else{
         this.getSectionsByProject(projectId)
         .then(sections => {
@@ -143,8 +143,8 @@ module.exports.subscribeProjectsToWebhooks = (page) => {
         page.forEach(project => {
             let name = project.name;
             if(name.startsWith("T: ")){
-                console.info("This is a template, don't subscribe to webhooks");
-                console.log(name); 
+                LOGGER.info("This is a template, don't subscribe to webhooks");
+                LOGGER.info(name); 
             }else{
                 this.subscribeToTaskAddedWebhook(project.gid, project.name);
                 this.subscribeToProjectMembershipWebhook(project.gid, project.name);

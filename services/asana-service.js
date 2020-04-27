@@ -92,8 +92,7 @@ module.exports.addProjectOnSubtask = (subtask, parentTask) => {
     const projectName = parentTask.memberships[0].project.name;
 
     if(projectName.startsWith("T: ") || projectName.startsWith("reLin")){
-        LOGGER.info("This is a template, don't add project on subtask");
-        LOGGER.info(projectName); 
+        LOGGER.info(`This is a template, don't add ${projectName} on subtask`);
     }else{
         this.getSectionsByProject(projectId)
         .then(sections => {

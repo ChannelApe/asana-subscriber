@@ -27,7 +27,7 @@ app.post('/receive-webhook/task-added', (req, res) => {
         events.map(event => {
             if(event.resource.resource_type === 'task' && event.action === 'added' && event.parent.resource_type === 'task'){
                 getTaskById(event.resource.gid).then(task => {
-                    if(task.parent.gid != null){
+                    if(task.parent != null){
                         LOGGER.debug('its a subtask with parent resource_type of task')
                         getTaskById(task.parent.gid).then(parentTask => {
                             addProjectOnSubtask(task, parentTask);

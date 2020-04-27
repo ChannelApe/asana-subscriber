@@ -136,8 +136,15 @@ module.exports.aggregateProjects = (offset) => {
 
 module.exports.subscribeProjectsToWebhooks = (page) => {
         page.forEach(project => {
-            this.subscribeToTaskAddedWebhook(project.gid, project.name);
-            this.subscribeToProjectMembershipWebhook(project.gid, project.name);
+            let name = project.name;
+            if(name.startsWith("T: ")){
+                console.info("This is a template, don't subscribe to webhooks");
+                console.log(name); 
+            }else{
+                this.subscribeToTaskAddedWebhook(project.gid, project.name);
+                this.subscribeToProjectMembershipWebhook(project.gid, project.name);
+            }
+            
         });
 }
 

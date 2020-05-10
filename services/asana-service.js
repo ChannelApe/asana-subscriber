@@ -24,6 +24,29 @@ module.exports.getTaskById = (id) => {
         .catch(reason => LOGGER.error(reason && reason.message));
 };
 
+module.exports.getTasksByProject = (projectId, offset) => {
+    if (offset === undefined) {
+        offset = null;
+    }
+    return instance
+        .get(`/tasks`, {
+            params: {
+                project: projectId,
+                offset: offset,
+                limit: 50
+            },
+        })
+        .then(response => response && response.data)
+        .catch(reason => LOGGER.error(reason && reason.message));
+};
+
+module.exports.deleteTaskById = (id) => {
+    return instance
+        .delete(`/tasks/${id}`)
+        .then(response => response && response.data && response.data.data)
+        .catch(reason => LOGGER.error(reason && reason.message));
+};
+
 module.exports.getUserById = (id) => {
     return instance
         .get(`/users/${id}`)
@@ -136,7 +159,31 @@ module.exports.aggregateProjects = (offset) => {
     });
 }
 
+module.exports.deleteAllTasksInProject = (projectId, offset) => {
+    this.getTasksByProject(projectId, offset).then(page => { 
+        //console.log(page);
+        page.data.forEach(task => {
+            let sleep = this.getRandomArbitrary(250,2500);
+            this.sleep(sleep).then(() => {
+                this.deleteTaskById(task.gid);
+                LOGGER.info('Deleted ' + task.name);
+              });
+        })
+        if(page.next_page){
+            this.deleteAllTasksInProject(projectId, page.next_page.offset);
+        }else{
+            LOGGER.info(`Done retrieving all tasks for deletion for ${projectId}`);
+        }
+    });
+}
 
+module.exports.getRandomArbitrary = (min, max) => {
+    return Math.random() * (max - min) + min;
+  }
+
+module.exports.sleep = (millis) =>{
+    return new Promise(resolve => setTimeout(resolve, millis));
+}
 
 module.exports.subscribeProjectsToWebhooks = (page) => {
         page.forEach(project => {

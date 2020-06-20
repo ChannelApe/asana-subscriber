@@ -111,11 +111,13 @@ module.exports.createSectionOnProject = (projectId, sectionName) => {
 module.exports.addProjectOnSubtask = (subtask, parentTask) => {
 
     const taskId = subtask.gid;
+    const taskName = subtask.name;
     const projectId = parentTask.memberships[0].project.gid;
     const projectName = parentTask.memberships[0].project.name;
+    const ignoredSubtaskProjects = process.env.IGNORED_SUBTASK_PROJECTS_LIST.split(',');
 
-    if(projectName.startsWith("T: ")){
-        LOGGER.info(`This is a template, don't add ${projectName} on subtask`);
+    if(projectName.startsWith("T: ") || (ignoredSubtaskProjects.indexOf(projectId) > -1)){
+        LOGGER.info(`This is a template or ignored project environment variable. We won't add ${projectName} on subtask ${taskName}`);
     }else{
         this.getSectionsByProject(projectId)
         .then(sections => {
@@ -161,9 +163,8 @@ module.exports.aggregateProjects = (offset) => {
 
 module.exports.deleteAllTasksInProject = (projectId, offset) => {
     this.getTasksByProject(projectId, offset).then(page => { 
-        //console.log(page);
         page.data.forEach(task => {
-            let sleep = this.getRandomArbitrary(250,2500);
+            let sleep = this.getRandomArbitrary(500,10000);
             this.sleep(sleep).then(() => {
                 this.deleteTaskById(task.gid);
                 LOGGER.info('Deleted ' + task.name);
